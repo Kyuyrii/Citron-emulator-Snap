@@ -1,0 +1,222 @@
+name: citron-emulator
+base: core24
+version: '0.7.0-5'
+platforms:
+  amd64:
+    build-on: [amd64]
+    build-for: [amd64]
+summary: Nintendo Switch Emulator Written In C++
+description: |
+  Nintendo Switch Emulator Written In C++
+grade: stable
+confinement: strict
+
+apps:
+  citron-emulator:
+    command-chain:
+      - snap/command-chain/gpu-2404-wrapper
+      - snap/command-chain/desktop-launch6
+    command: usr/bin/citron
+    desktop: usr/share/applications/org.citron_emu.citron.desktop
+    common-id: org.citron_emu.citron
+    environment:
+      QT_QPA_PLATFORM: xcb
+      GTK_USE_PORTAL: "1"
+      QT_VERSION: "6"
+    plugs:
+      - desktop
+      - desktop-legacy
+      - unity7
+      - opengl
+      - wayland
+      - x11
+      - screen-inhibit-control
+      - audio-playback
+      - network
+      - network-bind
+      - home
+      - removable-media
+      - mount-observe
+      - joystick
+      - bluez
+      - udisks2
+
+hooks:
+  configure:
+    command-chain:
+      - snap/command-chain/hooks-configure-desktop
+
+package-repositories:
+  - type: apt
+    url: http://origin.archive.neon.kde.org/user
+    suites: [noble]
+    components: [main]
+    architectures: [amd64]
+    key-id: 444DABCF3667D0283F894EDDE6D4736255751E5D
+  - type: apt
+    url: http://archive.ubuntu.com/ubuntu
+    suites: [plucky]
+    components: [main, multiverse, universe]
+    architectures: [amd64]
+    key-id: F6ECB3762474EDA9D21B7022871920D1991BC93C
+    key-server: keyserver.ubuntu.com
+
+plugs:
+  desktop:
+    mount-host-font-cache: false
+  gtk-2-themes:
+    interface: content
+    target: $SNAP/data-dir/themes
+    default-provider: gtk-common-themes
+  gtk-3-themes:
+    interface: content
+    target: $SNAP/data-dir/themes
+    default-provider: gtk-common-themes
+  icon-themes:
+    interface: content
+    target: $SNAP/data-dir/icons
+    default-provider: gtk-common-themes
+  sound-themes:
+    interface: content
+    target: $SNAP/data-dir/sounds
+    default-provider: gtk-common-themes
+  gpu-2404:
+    interface: content
+    target: $SNAP/gpu-2404
+    default-provider: mesa-2404
+  ffmpeg-2404:
+    interface: content
+    target: $SNAP/ffmpeg-platform
+    default-provider: ffmpeg-2404
+  shared-memory:
+    private: true
+
+parts:
+  citron-emulator:
+    after: [fmt]
+    plugin: nil
+    build-packages:
+      - wget
+    override-build: |
+      wget https://github.com/pkgforge-dev/Citron-AppImage/releases/download/0.7.0-5%402025-09-22_1758526814/Citron-0.7.0-5-anylinux-x86_64_v3.AppImage
+      chmod +x Citron-0.7.0-5-anylinux-x86_64_v3.AppImage
+      ./Citron-0.7.0-5-anylinux-x86_64_v3.AppImage --appimage-extract
+      mkdir -p $CRAFT_PART_INSTALL/opt/citron
+      mkdir -p $CRAFT_PART_INSTALL/usr/share/applications
+      mkdir -p $CRAFT_PART_INSTALL/usr/share/icons/hicolor/scalable/apps
+      sed -i 's|Name=citron|Name=Citron [NyKyu]|' AppDir/org.citron_emu.citron.desktop
+      sed -i 's|Icon=org.citron_emu.citron|Icon=${SNAP}/usr/share/icons/hicolor/scalable/apps/org.citron_emu.citron.svg|' AppDir/org.citron_emu.citron.desktop
+      sed -i 's|Exec=citron %f|Exec=${SNAP}/opt/citron/AppDir/bin/citron %f|' AppDir/org.citron_emu.citron.desktop
+      sed -i 's|TryExec=citron|TryExec=${SNAP}/opt/citron/AppDir/bin/citron|' AppDir/org.citron_emu.citron.desktop
+      mv -f AppDir/org.citron_emu.citron.desktop $CRAFT_PART_INSTALL/usr/share/applications/
+      mv -f AppDir/org.citron_emu.citron.svg $CRAFT_PART_INSTALL/usr/share/icons/hicolor/scalable/apps
+      mv -f AppDir/shared/bin $CRAFT_PART_INSTALL/usr/
+    prime:
+      - usr/share/applications
+      - usr/share/icons/hicolor/scalable/apps
+      - usr/bin
+
+  fmt:
+    after: [dependencies]
+    plugin: cmake
+    source: https://github.com/fmtlib/fmt.git
+    source-tag: 11.2.0
+    cmake-parameters:
+      - -DCMAKE_INSTALL_PREFIX=/usr
+      - -DBUILD_SHARED_LIBS=TRUE
+      - -DFMT_TEST=OFF
+
+  dependencies:
+    plugin: nil
+    stage-packages:
+      - libboost-context1.88.0
+      - libenet7
+      - libopengl0
+      - libxrender1
+      - libxcb-render0
+      - libxcursor1
+      - libxi6
+      - libxrandr2
+      - libarchive13t64
+      - libdeflate0
+      - libjpeg-turbo8
+      - libjbig0
+      - libtiff6
+      - libwebp7
+      - libwebpmux3
+      - libcairo2
+      - libfontconfig1
+      - libgraphite2-3
+      - libharfbuzz0b
+      - libpixman-1-0
+      - librsvg2-2
+      - liblcms2-2
+      - libasound2t64
+      - libcaca0
+      - libmpg123-0
+      - libogg0
+      - libopenjp2-7
+      - libopus0
+      - libpulse0
+      - libtheora0
+      - libtwolame0
+      - libv4l2rds0t64
+      - libvpx9
+      - libspeex1
+      - libgomp1
+      - libldap2
+      - libraw1394-11
+      - libv4l-0t64
+      - libglu1-mesa
+      - libglut3.12
+      - libb2-1
+      - libdouble-conversion3
+      - libmd4c0
+      - libpcre2-16-0
+      - libproxy1v5
+      - libqt6core6
+      - libqt6dbus6
+      - libqt6gui6
+      - libqt6network6
+      - libqt6widgets6
+      - kde-style-breeze
+
+  command-chain:
+    after: [dependencies]
+    plugin: nil
+    source: ./launcher
+    override-build: |
+      mkdir -p $CRAFT_PART_INSTALL/snap
+      cp -r command-chain $CRAFT_PART_INSTALL/snap/
+      chmod 777 $CRAFT_PART_INSTALL/snap/command-chain/*
+
+  fonts:
+    after: [citron-emulator]
+    plugin: nil
+    stage-packages:
+      - fonts-dejavu-core
+      - fonts-hack
+      - fonts-noto-cjk
+      - fonts-noto-hinted
+      - fonts-noto-unhinted
+      - fonts-tlwg-sawasdee-ttf
+      - fonts-dejavu-mono
+      - fonts-liberation
+      - fonts-noto-color-emoji
+      - fonts-noto-mono
+      - fonts-opensymbol
+      - fonts-ubuntu
+      - fonts-droid-fallback
+      - fonts-liberation-sans-narrow
+      - fonts-noto-core
+      - fonts-noto-ui-core
+      - fonts-tlwg-sawasdee
+      - fonts-urw-base35
+
+layout:
+  /usr/share/libdrm:
+    bind: $SNAP/gpu-2404/libdrm
+  /usr/share/drirc.d:
+    symlink: $SNAP/gpu-2404/drirc.d
+  /etc/fonts:
+    bind: $SNAP/etc/fonts
